@@ -7,6 +7,7 @@ import { Bar } from 'react-chartjs-2';
 export default function App() {
   const [loading, setLoading] = useState(true);
   const [obitos, setObitos] = useState([]);
+  const [obitos15, setObitos15] = useState([]);
   // const [data, setData] = useState([]);
 
   const dateFormatted = useCallback(
@@ -26,7 +27,7 @@ export default function App() {
 
       const starDate = new Date('03-06-2020');
 
-      const teste = await response.features.map((item, index) => {
+      const geral = await response.features.map((item, index) => {
         const perDay =
           index === 0
             ? item.attributes.Soma_por_dia
@@ -40,7 +41,10 @@ export default function App() {
         };
       });
 
-      setObitos(teste);
+      const ultimos15dias = geral.slice(Math.max(geral.length - 15, 1));
+
+      setObitos(geral);
+      setObitos15(ultimos15dias);
       setLoading(false);
     })();
   }, []);
@@ -75,6 +79,37 @@ export default function App() {
       ],
     };
   }, [obitos]);
+
+  const data15 = useMemo(() => {
+    return {
+      datasets: [
+        {
+          label: 'Óbitos por dia',
+          type: 'line',
+          data: [...obitos15.map((item) => item.perDay)],
+          fill: false,
+          borderColor: '#ff3300',
+          backgroundColor: '#ff3300',
+          pointBorderColor: '#ff3300',
+          pointBackgroundColor: '#ff3300',
+          pointHoverBackgroundColor: '#ff3300',
+          pointHoverBorderColor: '#ff3300',
+          yAxisID: 'y-axis-2',
+        },
+        {
+          type: 'bar',
+          label: 'Total de mortes',
+          data: [...obitos15.map((item) => item.Soma_por_dia)],
+          fill: false,
+          backgroundColor: '#cccccc',
+          borderColor: '#cccccc',
+          hoverBackgroundColor: '#cccccc',
+          hoverBorderColor: '#cccccc',
+          yAxisID: 'y-axis-1',
+        },
+      ],
+    };
+  }, [obitos15]);
 
   const options = {
     responsive: true,
@@ -115,7 +150,56 @@ export default function App() {
           position: 'right',
           id: 'y-axis-2',
           gridLines: {
+            display: false,
+          },
+          labels: {
+            show: true,
+          },
+        },
+      ],
+    },
+  };
+
+  const options15 = {
+    responsive: true,
+    tooltips: {
+      mode: 'label',
+    },
+    elements: {
+      line: {
+        fill: false,
+      },
+    },
+    scales: {
+      xAxes: [
+        {
+          display: true,
+          gridLines: {
+            display: false,
+          },
+          labels: [...obitos15.map((item) => dateFormatted(item.date))],
+        },
+      ],
+      yAxes: [
+        {
+          type: 'linear',
+          display: true,
+          position: 'left',
+          id: 'y-axis-1',
+          gridLines: {
             display: true,
+          },
+          labels: {
+            show: true,
+          },
+        },
+        {
+          type: 'linear',
+          display: true,
+          position: 'right',
+          id: 'y-axis-2',
+          gridLines: {
+            display: false,
           },
           labels: {
             show: true,
@@ -136,11 +220,15 @@ export default function App() {
 
   return (
     <div>
-      <h1>Óbitos por Covid-19 cidade Rio de Janeiro</h1>
       {loading ? (
         'Carregando...'
       ) : (
-        <Bar data={data} options={options} plugins={plugins} />
+        <>
+          <h1>Óbitos últimos 15 dias por Covid-19 cidade Rio de Janeiro</h1>
+          <Bar data={data15} options={options15} plugins={plugins} />
+          <h1>Óbitos por Covid-19 cidade Rio de Janeiro</h1>
+          <Bar data={data} options={options} plugins={plugins} />
+        </>
       )}
     </div>
   );
